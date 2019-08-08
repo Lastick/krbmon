@@ -17,10 +17,45 @@
 // Code formatting based on CS106B Style
 
 #include <stdio.h>
+#include <iostream>
+#include <string.h>
 #include "selfinfo.h"
 
 
+void showMemInfo(unsigned int pid) {
+  const unsigned int num_str_len = 64;
+  unsigned long int mem_rss = 0;
+  long int mem_vsize = 0;
+  char num_str[num_str_len];
+  if (Selfinfo::mem_usage(pid, mem_rss, mem_vsize)) {
+    Selfinfo::mem_size_format((long) mem_rss, num_str, num_str_len);
+    std::cout << "Resident Set Size: " << num_str << std::endl;
+    Selfinfo::mem_size_format((long) mem_vsize, num_str, num_str_len);
+    std::cout << "Virtual memory size: " << num_str << std::endl;
+  } else {
+    std::cout << "Can't find process for pid " << pid << std::endl;
+  }
+}
+
+void showHelp() {
+  std::cout << "Please, indicate the process identifier by template" << std::endl;
+  std::cout << "--pid N" << std::endl;
+}
+
 int main(int argc, char **argv) {
-  printf("hello world\n");
+
+  bool help_t = true;
+  unsigned int pid = 0;
+
+  if (argc == 3) {
+    if (strcmp(argv[1], "--pid") == 0) {
+      sscanf(argv[2], "%ud", &pid);
+      showMemInfo(pid);
+      help_t = false;
+    }
+  }
+
+  if (help_t) showHelp();
+
   return 0;
 }
