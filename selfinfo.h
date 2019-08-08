@@ -25,6 +25,10 @@ bool mem_usage(const unsigned int pid,
                unsigned long int &mem_rss,
                long int &mem_vsize);
 
+void mem_size_format(const long mem_size,
+                     char *str,
+                     const unsigned int str_len);
+
 }
 
 #endif // SELFINFO_H_INCLUDED
