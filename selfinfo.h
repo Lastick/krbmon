@@ -19,5 +19,12 @@
 #ifndef SELFINFO_H_INCLUDED
 #define SELFINFO_H_INCLUDED
 
+namespace Selfinfo {
+
+bool mem_usage(const unsigned int pid,
+               unsigned long int &mem_rss,
+               long int &mem_vsize);
+
+}
 
 #endif // SELFINFO_H_INCLUDED
