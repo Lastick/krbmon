@@ -54,17 +54,74 @@ void num_to_str(const long int num,
   sprintf(num_str, "%.2f", num_buff);
 }
 
-namespace Selfinfo {
-
-bool mem_usage(const unsigned int pid,
-               unsigned long int &mem_rss,
-               long int &mem_vsize) {
+bool cpu_usage_unix(unsigned long int &cpu_total,
+                    unsigned long int &cpu_idle) {
   bool res = false;
+  cpu_total = 0;
+  cpu_idle = 0;
+
+  const char *stat_path = "/proc/stat";
+  const unsigned int idle_pos = 4;
+  const unsigned int buff_size = 64;
+
+  int sub = 0;
+  unsigned int sub_n = 0;
+  unsigned int sub_pos_n = 0;
+  unsigned long int cpu_buff = 0;
+  char buff[buff_size];
+  FILE *fd;
+
+  memset(buff, 0x00, buff_size);
+
+  fd = fopen (stat_path, "r");
+  if (fd != NULL) {
+    sub_n = 0;
+    sub_pos_n = 0;
+    while (true) {
+      sub = fgetc(fd);
+      if (sub != 0x20 && sub != 0x0A && sub != EOF) {
+        buff[sub_n] = (char) sub;
+        if (sub_n < buff_size - 2) sub_n++;
+      } else {
+        if (sub_n > 0) {
+          buff[sub_n + 1] = 0x00;
+          sub_n = 0;
+          sub_pos_n++;
+          if (sub_pos_n != 0) {
+            cpu_buff = 0;
+            sscanf(buff, "%lu", &cpu_buff);
+            cpu_total += cpu_buff;
+            if (sub_pos_n == idle_pos + 1) {
+              cpu_idle = cpu_buff;
+			}
+          }
+          memset(buff, 0x00, buff_size);
+        }
+      }
+      if (sub == EOF) break;
+    }
+    fclose(fd);
+  }
+  if (cpu_total !=0 && cpu_idle != 0) res = true;
+
+  return res;
+}
+
+bool proc_info_unix(const unsigned int pid,
+                    long int &proc_utime,
+                    long int &proc_stime,
+                    long int &mem_vsize,
+                    unsigned long int &mem_rss) {
+  bool res = false;
+  proc_utime = 0;
+  proc_stime = 0;
   mem_rss = 0;
   mem_vsize = 0;
 
   const char *stat_pre = "/proc/";
   const char *stat_post = "/stat";
+  const unsigned int utime_pos = 14;
+  const unsigned int stime_pos = 15;
   const unsigned int vsize_pos = 23;
   const unsigned int rss_pos = 24;
   const unsigned int buff_size = 64;
@@ -100,6 +157,12 @@ bool mem_usage(const unsigned int pid,
           sub_n = 0;
           sub_pos_n++;
           switch(sub_pos_n) {
+            case utime_pos:
+              sscanf(buff, "%lu", &proc_utime);
+              break;
+            case stime_pos:
+              sscanf(buff, "%lu", &proc_stime);
+              break;
             case vsize_pos:
               sscanf(buff, "%lu", &mem_vsize);
               break;
@@ -115,7 +178,24 @@ bool mem_usage(const unsigned int pid,
     }
     fclose(fd);
   }
-  if (mem_rss !=0 && mem_vsize != 0) res = true;
+  if (proc_utime !=0 && proc_stime != 0 &&
+      mem_vsize !=0 && mem_rss !=0) res = true;
+
+  return res;
+}
+
+namespace Selfinfo {
+
+bool mem_usage(const unsigned int pid,
+               unsigned long int &mem_rss,
+               long int &mem_vsize) {
+  bool res = false;
+  mem_rss = 0;
+  mem_vsize = 0;
+  long int proc_utime = 0;
+  long int proc_stime = 0;
+
+  res = proc_info_unix(pid, proc_utime, proc_stime, mem_vsize, mem_rss);
 
   return res;
 }
