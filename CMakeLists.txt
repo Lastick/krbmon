@@ -19,7 +19,7 @@
 
 cmake_minimum_required(VERSION 2.8.12)
 set(CMAKE_BUILD_TYPE Release)
-project(karboused)
+project(krbmon)
 
 add_library(selfinfo STATIC selfinfo.cpp)
 
