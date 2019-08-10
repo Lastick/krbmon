@@ -19,7 +19,9 @@
 #include <stdio.h>
 #include <iostream>
 #include <string.h>
+#include <vector>
 #include "selfinfo.h"
+#include "util.h"
 
 
 void showMemInfo(unsigned int pid) {
@@ -37,9 +39,26 @@ void showMemInfo(unsigned int pid) {
   }
 }
 
+void showMemInfoByName(const char *name) {
+  std::vector<unsigned int> id;
+  if (getIDsByName(name, id)) {
+    if (id.size() == 1) {
+      showMemInfo(id[0]);
+    } else {
+      std::cout << "Several processes were found with this name:" << std::endl;
+      for (unsigned int target_id : id) {
+        std::cout << " -> " << target_id << std::endl;
+      }
+    }
+  } else {
+    std::cout << "Can't find process for name " << name << std::endl;
+  }
+}
+
 void showHelp() {
-  std::cout << "Please, indicate the process identifier by template" << std::endl;
-  std::cout << "--pid N" << std::endl;
+  std::cout << "Please, indicate the process by template" << std::endl;
+  std::cout << "  --pid ID" << std::endl;
+  std::cout << "  --proc_name NAME" << std::endl;
 }
 
 int main(int argc, char **argv) {
@@ -51,6 +70,10 @@ int main(int argc, char **argv) {
     if (strcmp(argv[1], "--pid") == 0) {
       sscanf(argv[2], "%ud", &pid);
       showMemInfo(pid);
+      help_t = false;
+    }
+    if (strcmp(argv[1], "--proc_name") == 0) {
+      showMemInfoByName(argv[2]);
       help_t = false;
     }
   }
