@@ -19,6 +19,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <pthread.h>
+#include "sleep.h"
 #include "selfinfo.h"
 
 
@@ -98,7 +100,7 @@ bool cpu_usage_unix(unsigned long int &cpu_total,
           memset(buff, 0x00, buff_size);
         }
       }
-      if (sub == EOF) break;
+      if (sub == EOF || sub == 0x0A) break;
     }
     fclose(fd);
   }
@@ -184,6 +186,12 @@ bool proc_info_unix(const unsigned int pid,
   return res;
 }
 
+void waiter(bool &flag){
+  while (flag){
+    Sleep(100);
+  }
+}
+
 namespace Selfinfo {
 
 bool mem_usage(const unsigned int pid,
@@ -235,6 +243,100 @@ void mem_size_format(const long mem_size,
       strcat(str, tb);
       break;
   }
+}
+
+Selfinfo::Selfinfo() {
+  this->status = false;
+  this->run = true;
+  this->is_run = true;
+  this->is_stop = true;
+  this->run_n = 0;
+  this->id = 0;
+  this->cpu_total = 0;
+  this->cpu_idle = 0;
+  this->proc_utime = 0;
+  this->proc_stime = 0;
+  this->mem_vsize = 0;
+  this->mem_rss = 0;
+  this->last_cpu_total = 0;
+  this->last_cpu_proc = 0;
+  this->cpu_proc_load = 0.0f;
+}
+
+const unsigned int Selfinfo::calc_interval = 300;
+
+Selfinfo::~Selfinfo() {
+  this->stop();
+}
+
+void Selfinfo::start(const unsigned int id) {
+  this->id = id;
+  pthread_create(&this->loop_tid, NULL, Selfinfo::init_loop, this);
+  waiter(this->is_run);
+  if (!this->status) this->stop();
+}
+
+void Selfinfo::stop() {
+  this->run = false;
+  waiter(this->is_stop);
+}
+
+void Selfinfo::compute() {
+  bool info = false;
+  bool cpu = false;
+  unsigned long int cpu_proc = 0;
+  info = proc_info_unix(this->id,
+                        this->proc_utime,
+                        this->proc_stime,
+                        this->mem_vsize,
+                        this->mem_rss);
+
+  cpu = cpu_usage_unix(this->cpu_total,
+                       this->cpu_idle);
+
+  if (info && cpu) {
+    cpu_proc = this->proc_utime + this->proc_stime;
+
+    this->cpu_proc_load = (float) (cpu_proc - this->last_cpu_proc) /
+                                  (this->cpu_total - this->last_cpu_total) * 100;
+
+    this->last_cpu_total = this->cpu_total;
+    this->last_cpu_proc = cpu_proc;
+    this->status = true;
+  } else {
+    this->status = false;
+  }
+}
+
+void Selfinfo::loop() {
+  while(this->run) {
+    this->compute();
+    if (this->run_n > 1) this->is_run = false;
+    else this->run_n++;
+    Sleep(Selfinfo::calc_interval);
+  }
+  this->is_stop = false;
+}
+
+void *Selfinfo::init_loop(void *vptr_args) {
+  ((Selfinfo *) vptr_args)->loop();
+  return NULL;
+}
+
+void Selfinfo::getRssMem(unsigned long int &size) {
+  size = this->mem_rss;
+}
+
+void Selfinfo::getVirtMem(long int &size) {
+  size = this->mem_vsize;
+}
+
+void Selfinfo::getProcLoad(float &load) {
+  load = this->cpu_proc_load;
+}
+
+bool Selfinfo::getStatus() {
+  return this->status;
 }
 
 }
