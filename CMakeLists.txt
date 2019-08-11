@@ -25,4 +25,5 @@ add_library(selfinfo STATIC selfinfo.cpp)
 
 add_executable(${PROJECT_NAME} main.cpp util.cpp)
 target_link_libraries(${PROJECT_NAME} selfinfo)
+target_link_libraries(${PROJECT_NAME} -pthread)
 
