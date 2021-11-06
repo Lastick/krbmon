@@ -27,3 +27,4 @@ add_executable(${PROJECT_NAME} main.cpp util.cpp)
 target_link_libraries(${PROJECT_NAME} selfinfo)
 target_link_libraries(${PROJECT_NAME} -pthread)
 
+install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME} DESTINATION bin)
