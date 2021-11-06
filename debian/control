@@ -1,0 +1,12 @@
+Source: krbmon
+Section: misc
+Maintainer: Vasya Ichkoff <vasyaichkoff@gmail.com>
+Standards-Version: 1.0
+
+Package: krbmon
+Section: misc
+Priority: optional
+Architecture: armhf
+Homepage: https://karbo.io/
+Description: krbmon util
+ krbmon util fot Karbowanec daemons
